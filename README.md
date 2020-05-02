@@ -6,13 +6,10 @@ Layer chart, examples circuits and settings:
 - Char_Lcd_drv.pdf ( https://github.com/RobertoBenjami/stm32_character_display_drivers/blob/master/Char_Lcd_drv.pdf )
 
 App:
-- LcdSpeedTest: Lcd speed test 
-- TouchCalib: Touchscreen calibration program 
-- Paint: Arduino paint clone
-- JpgViewer: JPG file viewer from SD card or pendrive
-- AnalogClock: Analog Clock demo
-  (printf: the result, i use the SWO pin for ST-LINK Serial Wire Viewer (SWV). See:examples/Src/syscalls.c)
-- 3d filled vector (from https://github.com/cbm80amiga/ST7789_3D_Filled_Vector_Ext)
+- helloworld: Minimal LCD program
+- democlock: Clock demo
+- lcd_speedmeter: measures the speed at which the LCD can be operated
+- cpuusagemeter: measures how much cpu is used for continuous interrupt update
 
 How to use starting from zero?
 
