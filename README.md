@@ -47,3 +47,4 @@ How to use starting from zero?
 How to adding the SWO support to cheap stlink ?
 https://lujji.github.io/blog/stlink-clone-trace/
 
+Attention: if the LCD power supply is 5V, use the 5V tolerant pins.
