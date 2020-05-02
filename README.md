@@ -5,6 +5,14 @@ I converted my old character LCD drive to stm32
 Layer chart, examples circuits and settings:
 - Char_Lcd_drv.pdf ( https://github.com/RobertoBenjami/stm32_character_display_drivers/blob/master/Char_Lcd_drv.pdf )
 
+Features:
+- framebuffer strategic
+- 4 and 8 bit control mode
+- dual or 2 piece LCD control
+- blinking characters
+- cursor position and type change
+- user characterset modify
+
 App:
 - helloworld: Minimal LCD program
 - democlock: Clock demo
