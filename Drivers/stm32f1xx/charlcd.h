@@ -63,7 +63,7 @@ LCD lines (1, 2 or 4) */
 LCD width (16, 20, 24, 40) */
 #define LCD_WIDTH       16
 /*------------------------------------------------------------------------------
-Select the timer interrupt (only LCD_MODE == 3 or 5) */
+Select the timer of interrupt (only LCD_MODE == 3 or 5) */
 #define LCD_TIMER        4
 /*-----------------------
 Timer interrupt priority (0..255 -> high priority..low priority) */
