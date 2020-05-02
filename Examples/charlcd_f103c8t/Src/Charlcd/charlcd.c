@@ -1103,7 +1103,7 @@ void LcdProcess(void)
       ch = SETDDRAMADDR1 + LcdCursorPos;/* In 1.th line + cursor position */
     else
       ch = SETDDRAMADDR2 - LCD_WIDTH + LcdCursorPos;/* In 2.th line + cursor position */
-    LcdWrite12(ch);
+    LcdWrite(ch);
     #endif // else LCD_E2
 
     // ----------------------------------- 2 piece of 4 line type
@@ -1167,12 +1167,13 @@ void LcdProcess(void)
     {
       ch = SETDDRAMADDR4 - 3*LCD_WIDTH + LcdCursorPos;/* In 4.th line + cursor position */
     }
-    LcdWrite12(ch);
+    LcdWrite(ch);
 
     #endif // else LCD_E2
     #endif // LCD_LINES
 
     LcdStatus = CURTYPE;                /* netx step: Cursor type change */
+    GPIOX_SET(LCD_RS);                  /* Data write (RS = 1) */
   }
 
   //----------------------------------------------------------------------------
@@ -1184,17 +1185,17 @@ void LcdProcess(void)
     #if GPIOX_PORTNUM(LCD_E2) >= GPIOX_PORTNUM_A
     if(LcdCursorPos < LCDCHARPERMODUL)
     {                                   /* cursor in 1.modul */
-      LcdWrite(LcdCursorType | 0xC0);   /* 0b00001100: + cursor setting */
-      LcdWrite2(0xC0);                  /* 0b00001100: cursor off */
+      LcdWrite(LcdCursorType | 0x0C);   /* 0b00001100: + cursor setting */
+      LcdWrite2(0x0C);                  /* 0b00001100: cursor off */
     }
     else
     {                                   /* cursor in 2.modul */
-      LcdWrite(0xC0);                   /* 0b00001100: cursor off */
-      LcdWrite2(LcdCursorType | 0xC0);  /* 0b00001100: + cursor setting */
+      LcdWrite(0x0C);                   /* 0b00001100: cursor off */
+      LcdWrite2(LcdCursorType | 0x0C);  /* 0b00001100: + cursor setting */
     }
 
     #else  /* LCD_E2 */
-    LcdWrite(LcdCursorType | 0xC0);     /* 0b00001100 */
+    LcdWrite(LcdCursorType | 0x0C);     /* 0b00001100 */
     #endif /* LCD_E2 */
 
     #if    LCD_MODE == 3
@@ -1202,6 +1203,7 @@ void LcdProcess(void)
     #else  // LCD_MODE == 3
     LcdStatus = REFREND;                /* Refresh is completed -> LcdStatus = REFREND */
     #endif // else LCD_MODE == 3
+    GPIOX_SET(LCD_RS);                  /* Data write (RS = 1) */
   }
   #endif // LCD_CURSOR
 }
