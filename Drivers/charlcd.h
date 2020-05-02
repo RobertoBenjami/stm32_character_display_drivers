@@ -258,7 +258,7 @@ void LcdCursorBlink(void);
 void LcdCursorUnBlink(void);
 
 /* Blink phase, blink on, blink off */
-extern volatile uint32_t BlinkPhase; /* 0 = blinked characters is visible, else not visible */
+void LcdBlinkPhase(uint32_t n);      /* n=0: blinked characters is visible, n=1: not visible, n>=2: toggle */
 void LcdBlinkChar(uint32_t n);       /* n-th character blink on */
 void LcdUnBlinkChar(uint32_t n);     /* n-th character blink off */
 

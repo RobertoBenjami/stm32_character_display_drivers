@@ -151,7 +151,7 @@ void mainApp(void)
     {
       /* if not is the automatic blink -> 1sec blink timer */
       #if (LCD_BLINKCHAR == 1) && (LCD_MODE != 5 || LCD_BLINKSPEED == 0)
-      BlinkPhase = !BlinkPhase;
+      LcdBlinkPhase(2);
       #endif
 
       /* go clock */

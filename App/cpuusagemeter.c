@@ -45,7 +45,7 @@ void mainApp(void)
   /* 2x16 characters ------------------ */
   #if LCD_BLINKCHAR == 1
   for(c = 24; c < 32; c++)
-  LcdBlinkChar(c);
+    LcdBlinkChar(c);
   #endif /* LCD_BLINKCHAR */
   #else  /* (1UL * LCD_WIDTH * LCD_LINES) < 80 */
   /* 4x40 characters ------------------ */

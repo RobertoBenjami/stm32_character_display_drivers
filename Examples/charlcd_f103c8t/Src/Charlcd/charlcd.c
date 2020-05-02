@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
    author:  Roberto Benjami
-   version: 2020.04
+   version: 2020.05
 ------------------------------------------------------------------------------*/
 
 #include "main.h"
@@ -224,6 +224,10 @@ volatile unsigned char LcdPos;          /* Actual DDRAM position */
    - CGR:      CGRAM upload state (write chargen to LCD)
    - REFREND:  Refresh end */
 enum LS {DDRADDR0, DDRADDR, DDR, CURTYPE, CURPOS, CGRADDR, CGR, REFREND} LcdStatus = DDR;
+
+uint32_t flag32 = 0;
+#define  FLAG_DATADIR     0
+#define  FLAG_BLINKPHASE  1
 
 //==============================================================================
 #if LCD_DATABITS == 8
@@ -456,8 +460,12 @@ LcdBusy
 #if (LCD_MODE == 1) || (LCD_MODE == 4)
 char LcdBusy(void)
 {
-  LCD_DIRREAD;                          /* data pins are input */
-  GPIOX_SET(LCD_RW);                    /* data direction: LCD -> microcontroller (read) */
+  if(!BITBAND_ACCESS(flag32, FLAG_DATADIR))
+  {
+    LCD_DIRREAD;                        /* data pins are input */
+    BITBAND_ACCESS(flag32, FLAG_DATADIR) = 1;
+    GPIOX_SET(LCD_RW);                  /* data direction: LCD -> microcontroller (read) */
+  }
   GPIOX_CLR(LCD_RS);                    /* RS = 0 */
   LCD_E_DELAY;
   GPIOX_SET(LCD_E);
@@ -469,8 +477,8 @@ char LcdBusy(void)
     #if LCD_DATABITS == 4
     LCD_E_DELAY;
     GPIOX_SET(LCD_E); LCD_E_DELAY; GPIOX_CLR(LCD_E);
-    LCD_E_DELAY;
     #endif /* #if LCD_DATABITS == 4 */
+    LCD_E_DELAY;
     GPIOX_SET(LCD_RS);                  /* RS = 1 */
     return 1;                           /* busy */
   }
@@ -491,6 +499,7 @@ char LcdBusy(void)
     LCD_E_DELAY;
     GPIOX_SET(LCD_E2); LCD_E_DELAY; GPIOX_CLR(LCD_E2);
     #endif /* #if LCD_DATABITS == 4 */
+    LCD_E_DELAY;
     GPIOX_SET(LCD_RS);                  /* RS = 1 */
     return 1;                           /* busy */
   }
@@ -502,8 +511,8 @@ char LcdBusy(void)
   #endif /* #if LCD_DATABITS == 4 */
   #endif /* LCD_E2 */
 
-  GPIOX_SET(LCD_RS);                  /* RS = 1 */
-  return 0;                             // szabad
+  GPIOX_SET(LCD_RS);                    /* RS = 1 */
+  return 0;                             /* not busy */
 }
 #endif  /* #if (LCD_MODE == 1) || (LCD_MODE == 4) */
 
@@ -516,8 +525,12 @@ LcdWrite (one byte write to LCD)
 void LcdWrite(uint8_t ch)
 {
   #if (LCD_MODE == 1) || (LCD_MODE == 4)
-  GPIOX_CLR(LCD_RW);                    /* data direction: microcontroller -> LCD (write) */
-  LCD_DIRWRITE;
+  if(BITBAND_ACCESS(flag32, FLAG_DATADIR))
+  {
+    GPIOX_CLR(LCD_RW);                  /* data direction: microcontroller -> LCD (write) */
+    LCD_DIRWRITE;
+    BITBAND_ACCESS(flag32, FLAG_DATADIR) = 0;
+  }
   #endif
 
   #if LCD_DATABITS == 4
@@ -546,6 +559,15 @@ void LcdWrite2(uint8_t ch)
 
 void LcdWrite12(uint8_t ch)
 {
+  #if (LCD_MODE == 1) || (LCD_MODE == 4)
+  if(!lcd_dir)
+  {
+    GPIOX_CLR(LCD_RW);                  /* data direction: microcontroller -> LCD (write) */
+    LCD_DIRWRITE;
+    lcd_dir = 1;
+  }
+  #endif
+
   #if LCD_DATABITS == 4
   LCD_WRITE_HI(ch);
   GPIOX_SET(LCD_E); GPIOX_SET(LCD_E2); LCD_E_DELAY; GPIOX_CLR(LCD_E); GPIOX_CLR(LCD_E2); LCD_E_DELAY;
@@ -589,7 +611,13 @@ char*  uchp;
 
 //==============================================================================
 #if     LCD_BLINKCHAR == 1
-volatile uint32_t BlinkPhase; /* 0 = blinked characters is visible, else not visible */
+void LcdBlinkPhase(uint32_t n)
+{
+  if(n >= 2)
+    BITBAND_ACCESS(flag32, FLAG_BLINKPHASE) = 1 - BITBAND_ACCESS(flag32, FLAG_BLINKPHASE);
+  else
+    BITBAND_ACCESS(flag32, FLAG_BLINKPHASE) = n;
+}
 volatile char LcdBlink[(LCDTEXTSIZE + 7) / 8];
 void LcdBlinkChar(uint32_t n) { if(n < LCDTEXTSIZE) LcdBlink[n >> 3] |= (1 << (n & 7)); }
 void LcdUnBlinkChar(uint32_t n)  { if(n < LCDTEXTSIZE) LcdBlink[n >> 3] &= ~(1 << (n & 7)); }
@@ -636,7 +664,7 @@ uint32_t LcdRefreshed(void) { if(LCD_TIMX->CR1 & TIM_CR1_CEN) return 0; else ret
 ===============================================================================*/
 void LcdInit(void)
 {
-  unsigned int i;
+  uint32_t i;
   uint8_t ch;
 
   #if 0
@@ -748,8 +776,7 @@ void LcdInit(void)
 
   #if LCD_CHARSETINIT == 1
   DelayMs(1);
-  LcdWrite(SETCGRAMADDR);               /* CGRAM = 0 */
-  LcdWrite2(SETCGRAMADDR);
+  LcdWrite12(SETCGRAMADDR);               /* CGRAM = 0 */
 
   GPIOX_SET(LCD_RS);
   for(i = 0; i < 64; i++)
@@ -843,7 +870,7 @@ void LcdProcess(void)
   static uint32_t BlinkTimer = LCD_BLINKSPEED * (LCD_LINES * (LCD_WIDTH + 1));
   if(!BlinkTimer--)
   {
-    BlinkPhase = !BlinkPhase;
+    BITBAND_ACCESS(flag32, FLAG_BLINKPHASE) = 1 - BITBAND_ACCESS(flag32, FLAG_BLINKPHASE);
     BlinkTimer = LCD_BLINKSPEED * (LCD_LINES * (LCD_WIDTH + 1));
   }
   #endif
@@ -865,7 +892,7 @@ void LcdProcess(void)
     #endif /* LCD_ZEROCHANGE */
 
     #if LCD_BLINKCHAR == 1
-    if((BlinkPhase) && (LcdBlink[LcdPos >> 3] & (1 << (LcdPos & 7))))
+    if(BITBAND_ACCESS(flag32, FLAG_BLINKPHASE) && (LcdBlink[LcdPos >> 3] & (1 << (LcdPos & 7))))
       ch = ' ';                         /* if blink phase == 1, and the character is blinked -> change to ' ' */
     #endif /* LCD_BLINKCHAR */
 
@@ -884,7 +911,7 @@ void LcdProcess(void)
     }
     #endif /* LCD_ZEROCHANGE */
     #if LCD_BLINKCHAR == 1
-    if((BlinkPhase) && (LcdBlink[(LcdPos + LCD_LINES * LCD_WIDTH) >> 3] & (1 << ((LcdPos + LCD_LINES * LCD_WIDTH) & 7))))
+    if(BITBAND_ACCESS(flag32, FLAG_BLINKPHASE) && (LcdBlink[(LcdPos + LCD_LINES * LCD_WIDTH) >> 3] & (1 << ((LcdPos + LCD_LINES * LCD_WIDTH) & 7))))
       ch = ' ';
     #endif /* LCD_BLINKCHAR */
 
@@ -1049,8 +1076,7 @@ void LcdProcess(void)
   else if(LcdStatus == CGR)
   {
     ch = *uchp++;                       /* Character generator data */
-    LcdWrite(ch);
-    LcdWrite2(ch);
+    LcdWrite12(ch);
     LcdPos++;
     if(LcdPos >= 64)
     {                                   /* End of character generator data */
